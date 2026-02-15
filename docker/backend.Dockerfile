@@ -5,7 +5,6 @@ WORKDIR /app
 
 COPY src/tools.py src/generation_pipeline.py src/graphrag_agent.py src/api_backend.py src/api_app.py /app/
 RUN mkdir -p /app/user_img
-COPY user_img/user_img1.jpg /app/user_img/
 COPY data/clip_image.index data/clip_text.index data/keywords.csv data/photo_ids.csv /app/
 # COPY .env neo4j_acc.txt /app/
 

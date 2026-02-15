@@ -7,7 +7,6 @@ WORKDIR /app
 # COPY .env neo4j_acc.txt /app/
 COPY src/app.py /app/
 RUN mkdir -p /app/user_img
-COPY user_img/user_img1.jpg /app/user_img/
 
 EXPOSE 8501
 
