@@ -36,16 +36,15 @@ RUN mkdir -p ${SPARK_HOME} && \
 ENV PATH="${SPARK_HOME}/bin:${SPARK_HOME}/sbin:$PATH"
 
 
-# Install shared Conda environment
 RUN pip install --no-cache-dir \
     --extra-index-url https://download.pytorch.org/whl/cu128 \
     torch==2.10.0+cu128 \
     torchvision==0.25.0+cu128 
 RUN pip install --no-cache-dir \
-    fastapi uvicorn transformers sentence-transformers langchain-neo4j langchain-ollama langgraph python-dotenv numpy pandas pillow faiss-cpu ddgs pyarrow confluent-kafka
+    fastapi uvicorn transformers sentence-transformers langchain-neo4j \
+    langchain-ollama langgraph python-dotenv numpy pandas pillow \
+    faiss-cpu ddgs pyarrow confluent-kafka python-multipart streamlit
 RUN pip install --no-cache-dir pyspark==${SPARK_VERSION} findspark
-# ENV PATH=/opt/conda/envs/python312/bin:$PATH
 
-# Default shell = inside conda env
 
 WORKDIR /app

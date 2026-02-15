@@ -3,17 +3,21 @@ FROM myproject/base:latest
 
 WORKDIR /app
 
-COPY tools.py generation_pipeline.py graphrag_agent.py api_backend.py api_app.py /app/
+COPY src/tools.py src/generation_pipeline.py src/graphrag_agent.py src/api_backend.py src/api_app.py /app/
 RUN mkdir -p /app/user_img
 COPY user_img/user_img1.jpg /app/user_img/
-COPY .env neo4j_acc.txt clip_image.index clip_text.index keywords.csv photo_ids.csv /app/
+COPY data/clip_image.index data/clip_text.index data/keywords.csv data/photo_ids.csv /app/
+# COPY .env neo4j_acc.txt /app/
 
 ENV HF_HOME=/root/.cache/huggingface
 
 EXPOSE 8000
-RUN python3 -c "from transformers import AutoModel, AutoTokenizer; \
+RUN python3 -c "from transformers import AutoModel, AutoTokenizer, CLIPProcessor, BlipProcessor, BlipForConditionalGeneration; \
     AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2'); \
+    AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2'); \
     AutoModel.from_pretrained('openai/clip-vit-large-patch14'); \
-    AutoModel.from_pretrained('Salesforce/blip-image-captioning-base')"
+    CLIPProcessor.from_pretrained('openai/clip-vit-large-patch14'); \
+    BlipForConditionalGeneration.from_pretrained('Salesforce/blip-image-captioning-base'); \
+    BlipProcessor.from_pretrained('Salesforce/blip-image-captioning-base')"
 
 CMD ["uvicorn", "api_backend:app", "--host", "0.0.0.0", "--port", "8000"]

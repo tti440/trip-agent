@@ -2,7 +2,7 @@ FROM trip-spark-master:latest
 # Switch to root to install libs
 USER root
 
-COPY --chown=185 neo4j_acc.txt /opt/spark/workdir/neo4j_acc.txt
+# COPY --chown=185 neo4j_acc.txt /opt/spark/workdir/neo4j_acc.txt
 COPY --chown=185 data_gather_source/spark_neo4j_index_creation.py /opt/spark/workdir/spark_neo4j_index_creation.py
 WORKDIR /opt/spark/workdir
 RUN mkdir -p /opt/spark/workdir/.ivy2 && chown -R 185:185 /opt/spark/workdir

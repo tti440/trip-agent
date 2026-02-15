@@ -22,20 +22,20 @@ frontend:
 	docker build -t trip-frontend:latest -f docker/frontend.Dockerfile .
 
 neo4j-up:
-	kubectl apply -f neo4j-data-persistentvolumeclaim.yaml,neo4j-service.yaml,neo4j-deployment.yaml
+	kubectl apply -f k8s/neo4j-data-persistentvolumeclaim.yaml,k8s/neo4j-service.yaml,k8s/neo4j-deployment.yaml
 
 ollama-up:
-	kubectl apply -f ollama-data-persistentvolumeclaim.yaml,ollama-service-service.yaml,ollama-service-deployment.yaml
+	kubectl apply -f k8s/ollama-data-persistentvolumeclaim.yaml,k8s/ollama-service-service.yaml,k8s/ollama-service-deployment.yaml
 
 backend-up:
-	kubectl apply -f backend-claim1-persistentvolumeclaim.yaml,backend-service.yaml,backend-deployment.yaml
+	kubectl apply -f k8s/backend-claim1-persistentvolumeclaim.yaml,k8s/backend-service.yaml,k8s/backend-deployment.yaml
 
 frontend-up:
-	kubectl apply -f frontend-service.yaml,frontend-deployment.yaml
+	kubectl apply -f k8s/frontend-service.yaml,k8s/frontend-deployment.yaml
 
 #change replicas
 spark-up:
-	kubectl apply -f spark-master-service.yaml,spark-master-deployment.yaml,spark-worker-1-deployment.yaml
+	kubectl apply -f k8s/spark-master-service.yaml,k8s/spark-master-deployment.yaml,k8s/spark-worker-1-deployment.yaml
 	kubectl scale deployment spark-worker-1 --replicas=5
 
 clean:
