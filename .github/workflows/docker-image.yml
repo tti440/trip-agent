@@ -14,61 +14,96 @@ env:
   
 
 jobs:
-  build-and-push:
+  changes:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
+    outputs:
+      base: ${{ steps.filter.outputs.base }}
+      app: ${{ steps.filter.outputs.app }}
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      spark: ${{ steps.filter.outputs.spark }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            base:
+              - 'docker/base.Dockerfile'
+            app:
+              - 'src/api_backend.py'
+              - 'src/api_app.py'
+              - 'src/tools.py'
+              - 'docker/app.Dockerfile'
+            backend:
+              - 'src/tools.py'
+              - 'src/generation_pipeline.py'
+              - 'src/graphrag_agent.py'
+              - 'src/api_backend.py'
+              - 'src/api_app.py'
+              - 'docker/backend.Dockerfile'
+            frontend:
+              - 'src/app.py'
+              - 'docker/frontend.Dockerfile'
+            spark:
+              - 'data_gather_src/**'
+              - 'docker/spark.Dockerfile'
 
-    - name: Log in to the Container registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+  build-base:
+    needs: changes
+    if: ${{ needs.changes.outputs.base == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Base
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/base.Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}/myproject/base:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Build and push Base
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: docker/base.Dockerfile
-        push: true
-        tags: ${{ env.REGISTRY }}/${{ github.repository }}/myproject/base:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        
-    - name: Build and push Frontend
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: docker/frontend.Dockerfile
-        push: true
-        tags: ${{ env.REGISTRY }}/${{ github.repository }}/trip-frontend:latest
-        
-    - name: Build and push Spark
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: docker/spark.Dockerfile
-        push: true
-        tags: ${{ env.REGISTRY }}/${{ github.repository }}/trip-spark:latest
-        
-    - name: Build and push Backend
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: docker/backend.Dockerfile
-        push: true
-        tags: ${{ env.REGISTRY }}/${{ github.repository }}/trip-backend:latest
-
-    - name: Build and push App
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: docker/app.Dockerfile
-        push: true
-        tags: ${{ env.REGISTRY }}/${{ github.repository }}/trip-app:latest
+  build-services:
+    needs: [changes, build-base]
+    if: |
+      always() && 
+      (needs.changes.outputs.base == 'true' || 
+       needs.changes.outputs.app == 'true' || 
+       needs.changes.outputs.backend == 'true' || 
+       needs.changes.outputs.frontend == 'true' || 
+       needs.changes.outputs.spark == 'true')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: app
+            run: ${{ needs.changes.outputs.app == 'true' || needs.changes.outputs.base == 'true' }}
+            file: docker/app.Dockerfile
+            tag: trip-app
+          - service: backend
+            run: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.base == 'true' }}
+            file: docker/backend.Dockerfile
+            tag: trip-backend
+          - service: frontend
+            run: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.base == 'true' }}
+            file: docker/frontend.Dockerfile
+            tag: trip-frontend
+          - service: spark
+            run: ${{ needs.changes.outputs.spark == 'true' || needs.changes.outputs.base == 'true' }}
+            file: docker/spark.Dockerfile
+            tag: trip-spark
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Service
+        if: ${{ matrix.run == true }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.tag }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
