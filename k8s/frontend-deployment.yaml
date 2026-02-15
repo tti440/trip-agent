@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: streamlit
-          image: trip-frontend:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/tti440/trip-agent/trip-frontend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8501

@@ -45,8 +45,8 @@ spec:
             - "7077"
             - --webui-port
             - "8080"
-          image: trip-spark-master:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/tti440/trip-agent/trip-spark-master:latest
+          imagePullPolicy: Always
           name: spark-master
           ports:
             - containerPort: 8080

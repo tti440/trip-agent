@@ -21,6 +21,6 @@ spec:
         io.kompose.service: base
     spec:
       containers:
-        - image: myproject/base:latest
+        - image: ghcr.io/tti440/trip-agent/myproject/base:latest
           name: base
       restartPolicy: Always

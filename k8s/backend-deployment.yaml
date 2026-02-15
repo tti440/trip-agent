@@ -52,9 +52,9 @@ spec:
               value: http://ollama-service:11434
             - name: BACKEND_HOST
               value: "localhost"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: orchestrator
-          image: trip-app:latest
+          image: ghcr.io/tti440/trip-agent/trip-app:latest
           resources:
             limits:
               memory: "1Gi"
@@ -96,8 +96,8 @@ spec:
                   key: NEO4J_DATABASE
             - name: OLLAMA_HOST
               value: http://ollama-service:11434
-          image: trip-backend:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/tti440/trip-agent/trip-backend:latest
+          imagePullPolicy: Always
           name: backend
           ports:
             - containerPort: 8000

@@ -1,5 +1,5 @@
 # spark.Dockerfile
-FROM myproject/base:latest
+FROM ghcr.io/tti440/trip-agent/trip-base:latest
 
 
 WORKDIR /opt/spark/workdir
