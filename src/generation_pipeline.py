@@ -26,10 +26,10 @@ class VisionKnowledgeBackend:
 		self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14", use_fast=True)
 		self.blip_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base", use_fast=True)
 		self.blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(self.device)
-		self.image_index = faiss.read_index(os.path.join("data/","clip_image.index"))
-		self.text_index = faiss.read_index(os.path.join("data/","clip_text.index"))
-		self.keywords_df = pd.read_csv(os.path.join("data/","keywords.csv"))
-		self.ids_list = pd.read_csv(os.path.join("data/","photo_ids.csv"), header=None)
+		self.image_index = faiss.read_index("clip_image.index")
+		self.text_index = faiss.read_index("clip_text.index")
+		self.keywords_df = pd.read_csv("keywords.csv")
+		self.ids_list = pd.read_csv("photo_ids.csv", header=None)
 		# print("✅ Models and indexes loaded.")
 
 	def image_to_text(self, image_path):
