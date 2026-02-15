@@ -1,4 +1,4 @@
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 import asyncio
 from typing import List, TypedDict, Annotated
 

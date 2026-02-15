@@ -43,7 +43,7 @@ RUN pip install --no-cache-dir \
 RUN pip install --no-cache-dir \
     fastapi uvicorn transformers sentence-transformers langchain-neo4j \
     langchain-ollama langgraph python-dotenv numpy pandas pillow \
-    faiss-cpu duckduckgo-search pyarrow confluent-kafka
+    faiss-cpu ddgs pyarrow confluent-kafka
 RUN pip install --no-cache-dir pyspark==${SPARK_VERSION} findspark
 
 
