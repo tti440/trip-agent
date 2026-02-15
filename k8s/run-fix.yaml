@@ -1,0 +1,42 @@
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fix-bigben-pod
+spec:
+  containers:
+  - name: reindexer
+    image: fix-bigben-pod:latest
+    imagePullPolicy: Never
+    command: ["/bin/bash", "-c"]
+    args:
+      - python spark_neo4j_index_creation.py
+    securityContext:
+      runAsUser: 0
+    env:
+    - name: NEO4J_HOST
+      value: "neo4j"
+    - name: OLLAMA_HOST
+      value: "ollama-service" 
+    - name: SPARK_MASTER_URL
+      value: "spark://spark-master:7077"
+    - name: JAVA_TOOL_OPTIONS
+      value: "-Duser.name=spark --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.base/sun.misc=ALL-UNNAMED"
+    - name: HADOOP_USER_NAME
+      value: "spark"
+    - name: SPARK_USER
+      value: "spark"
+    - name: HOME
+      value: "/tmp/spark-home"
+    - name: PYSPARK_SUBMIT_ARGS
+      value: >-
+        --conf "spark.driver.extraJavaOptions=-Duser.name=spark --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.base/sun.misc=ALL-UNNAMED"
+        --conf "spark.executor.extraJavaOptions=-Duser.name=spark --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.base/sun.misc=ALL-UNNAMED"
+        pyspark-shell
+    volumeMounts:
+    - name: temp-home
+      mountPath: /tmp/spark-home
+  volumes:
+    - name: temp-home
+      emptyDir: {}
+  restartPolicy: Never

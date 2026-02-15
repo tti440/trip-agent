@@ -1,0 +1,34 @@
+# Sensitive Info
+neo4j_acc.txt
+.env
+
+# Large Data & Artifacts
+graph_docs/
+graph_docs1/
+graph_docs2/
+graph_docs3/
+landmarks_ready_for_ollama/
+document_split/
+parts/
+*.index
+*.tar
+*.tar.gz
+*.pkl
+*.parquet
+graph_description.json
+
+# User Uploads
+user_img/*
+!user_img/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+environment.yml
+
+# Debug/Logs
+*.log
+output-candidate.txt
+output_description.txt

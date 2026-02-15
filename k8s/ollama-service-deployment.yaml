@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml
+    kompose.version: 1.38.0 (a8f5d1cbd)
+  labels:
+    io.kompose.service: ollama-service
+  name: ollama-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: ollama-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml
+        kompose.version: 1.38.0 (a8f5d1cbd)
+      labels:
+        io.kompose.service: ollama-service
+    spec:
+      containers:
+        - args:
+            - serve
+          env:
+            # - name: NVIDIA_VISIBLE_DEVICES
+            #   value: "all"
+            # - name: NVIDIA_DRIVER_CAPABILITIES  # <--- ADD THIS LINE
+            #   value: "compute,utility"
+            - name: OLLAMA_HOST
+              value: "0.0.0.0"
+            - name: OLLAMA_CONTEXT_LENGTH
+              value: "4096"
+            - name: OLLAMA_MAX_LOADED_MODELS
+              value: "1"
+            - name: OLLAMA_KEEP_ALIVE
+              value: "0"
+            - name: OLLAMA_NUM_PARALLEL
+              value: "1"
+            - name: OLLAMA_FLASH_ATTENTION
+              value: "1"
+            - name: OLLAMA_KV_CACHE_TYPE
+              value: "q4_0"
+          resources:
+            limits:
+              memory: "6Gi"
+              cpu: "2"
+              nvidia.com/gpu: 1
+            requests:
+              memory: "4Gi"
+              cpu: "1"
+              nvidia.com/gpu: 1
+          image: ollama/ollama:latest
+          name: ollama
+          ports:
+            - containerPort: 11434
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /root/.ollama
+              name: ollama-data
+      restartPolicy: Always
+      volumes:
+      - name: ollama-data
+        persistentVolumeClaim:
+          claimName: ollama-data
+      # volumes:
+      # - name: ollama-data
+      #   hostPath:
+      #     path: /run/desktop/mnt/host/d/trip_model_repo/ollama
+      #     type: DirectoryOrCreate

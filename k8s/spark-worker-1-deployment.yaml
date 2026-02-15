@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml
+    kompose.version: 1.38.0 (a8f5d1cbd)
+  labels:
+    io.kompose.service: spark-worker-1
+  name: spark-worker-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: spark-worker-1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml
+        kompose.version: 1.38.0 (a8f5d1cbd)
+      labels:
+        io.kompose.service: spark-worker-1
+    spec:
+      containers:
+        - args:
+            - /opt/spark/bin/spark-class
+            - org.apache.spark.deploy.worker.Worker
+            - spark://spark-master:7077
+          env:
+            - name: PYSPARK_DRIVER_PYTHON
+              value: python3
+            - name: PYSPARK_PYTHON
+              value: python3
+            - name: SPARK_MASTER_URL
+              value: spark://spark-master:7077
+            - name: SPARK_MODE
+              value: worker
+            - name: SPARK_WORKER_CORES
+              value: "1"
+            - name: SPARK_WORKER_MEMORY
+              value: 5G
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Duser.name=spark --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.base/sun.misc=ALL-UNNAMED"
+          image: trip-spark-master:latest
+          imagePullPolicy: IfNotPresent
+          name: spark-worker-1
+        
