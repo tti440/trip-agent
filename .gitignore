@@ -32,3 +32,4 @@ environment.yml
 *.log
 output-candidate.txt
 output_description.txt
+gitAPI.txt

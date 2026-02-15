@@ -3,7 +3,7 @@ FROM myproject/base:latest
 
 
 WORKDIR /app
-# RUN pip install --no-cache-dir python-multipart
+RUN pip install --no-cache-dir python-multipart
 
 # COPY .env neo4j_acc.txt /app/
 COPY src/api_backend.py src/api_app.py src/tools.py /app/

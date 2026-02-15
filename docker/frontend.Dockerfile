@@ -2,7 +2,7 @@ FROM myproject/base:latest
 
 
 WORKDIR /app
-# RUN pip install --no-cache-dir --ignore-installed streamlit
+RUN pip install --no-cache-dir --ignore-installed streamlit
 
 # COPY .env neo4j_acc.txt /app/
 COPY src/app.py /app/
