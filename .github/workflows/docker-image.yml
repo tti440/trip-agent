@@ -31,15 +31,17 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build and push Backend
+    - name: Build and push Base
       uses: docker/build-push-action@v5
       with:
         context: .
         file: docker/base.Dockerfile
         push: true
         tags: ${{ env.REGISTRY }}/${{ github.repository }}/myproject/base:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         
-    - name: Build and push Backend
+    - name: Build and push Frontend
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -47,7 +49,7 @@ jobs:
         push: true
         tags: ${{ env.REGISTRY }}/${{ github.repository }}/trip-frontend:latest
         
-    - name: Build and push Backend
+    - name: Build and push Spark
       uses: docker/build-push-action@v5
       with:
         context: .
