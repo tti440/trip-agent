@@ -14,12 +14,10 @@ import subprocess
 cmd = "ip route show | grep default | awk '{print $3}'"
 WINDOWS_HOST_IP = subprocess.getoutput(cmd)
 
-
-dotenv.load_dotenv("neo4j_acc.txt")
-URI = os.getenv("NEO4J_LOCAL_URI")
-USER = os.getenv("NEO4J_LOCAL_USER")
-PWD = os.getenv("NEO4J_LOCAL_PASSWORD")
-DATABASE = os.getenv("NEO4J_LOCAL_DATABASE") 
+URI = os.getenv("NEO4J_URI")
+USER = os.getenv("NEO4J_USER")
+PWD = os.getenv("NEO4J_PASSWORD")
+DATABASE = os.getenv("NEO4J_DATABASE") 
 
 graph = Neo4jGraph(url=URI, username=USER, password=PWD, database=DATABASE)
 

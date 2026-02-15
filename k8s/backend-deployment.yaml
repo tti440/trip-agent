@@ -28,8 +28,26 @@ spec:
               value: "all"
             - name: PYTHONUNBUFFERED
               value: "1"
-            - name: NEO4J_LOCAL_URI
-              value: bolt://neo4j:7687
+            - name: NEO4J_URI
+              valueFrom:
+                secretKeyRef:
+                  name: neo4j-credentials
+                  key: NEO4J_URI
+            - name: NEO4J_USER
+              valueFrom:
+                secretKeyRef:
+                  name: neo4j-credentials
+                  key: NEO4J_USER
+            - name: NEO4J_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: neo4j-credentials
+                  key: NEO4J_PASSWORD
+            - name: NEO4J_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: neo4j-credentials
+                  key: NEO4J_DATABASE
             - name: OLLAMA_HOST
               value: http://ollama-service:11434
             - name: BACKEND_HOST
@@ -56,8 +74,26 @@ spec:
               value: "1"
             - name: HF_HOME
               value: /root/.cache/huggingface
-            - name: NEO4J_LOCAL_URI
-              value: bolt://neo4j:7687
+            - name: NEO4J_URI
+              valueFrom:
+                secretKeyRef:
+                  name: neo4j-credentials
+                  key: NEO4J_URI
+            - name: NEO4J_USER
+              valueFrom:
+                secretKeyRef:
+                  name: neo4j-credentials
+                  key: NEO4J_USER
+            - name: NEO4J_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: neo4j-credentials
+                  key: NEO4J_PASSWORD
+            - name: NEO4J_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: neo4j-credentials
+                  key: NEO4J_DATABASE
             - name: OLLAMA_HOST
               value: http://ollama-service:11434
           image: trip-backend:latest

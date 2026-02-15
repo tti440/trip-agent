@@ -7,11 +7,10 @@ import time
 import os
 import dotenv
 
-# 1. SETUP & CONFIG
-dotenv.load_dotenv("neo4j_acc.txt")
-URI = os.getenv("NEO4J_LOCAL_URI") or "bolt://localhost:7687"
-USER = os.getenv("NEO4J_LOCAL_USER") or "neo4j"
-PWD = os.getenv("NEO4J_LOCAL_PASSWORD") or "password"
+
+URI = os.getenv("NEO4J_URI") 
+USER = os.getenv("NEO4J_USER")
+PWD = os.getenv("NEO4J_PASSWORD")
 
 spark = SparkSession.builder \
     .appName("WikiFillTextAndURL") \

@@ -8,11 +8,10 @@ CSV_PATH = "reltype_to_group.csv"
 PROGRESS = "reltype_apoc_progress.json"
 BATCH_SIZE = 5000  # reduce to 2000 if you still see memory pressure
 
-dotenv.load_dotenv("neo4j_acc.txt")
-URI = os.getenv("NEO4J_LOCAL_URI", "bolt://localhost:7687")
-USER = os.getenv("NEO4J_LOCAL_USER", "neo4j")
-PWD = os.getenv("NEO4J_LOCAL_PASSWORD", "neo4j_pw")
-DB  = os.getenv("NEO4J_DATABASE", "neo4j")
+URI = os.getenv("NEO4J_URI")
+USER = os.getenv("NEO4J_USER")
+PWD = os.getenv("NEO4J_PASSWORD")
+DB  = os.getenv("NEO4J_DATABASE")
 
 CYPHER = """
 CALL apoc.periodic.iterate(

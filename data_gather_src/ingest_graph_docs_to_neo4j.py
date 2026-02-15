@@ -39,13 +39,13 @@ def load_env(path: str):
 
 
 def get_creds() -> Tuple[str, str, str]:
-	uri = os.getenv("NEO4J_LOCAL_URI")
-	user = os.getenv("NEO4J_LOCAL_USER")
-	pwd = os.getenv("NEO4J_LOCAL_PASSWORD")
-	db = os.getenv("NEO4J_DATABASE") or "neo4j"
+	uri = os.getenv("NEO4J_URI")
+	user = os.getenv("NEO4J_USER")
+	pwd = os.getenv("NEO4J_PASSWORD")
+	db = os.getenv("NEO4J_DATABASE")
 
 	if not uri or not user or not pwd:
-		raise RuntimeError("Missing NEO4J_LOCAL_URI / USER / PASSWORD in env file.")
+		raise RuntimeError("Missing NEO4J_URI / USER / PASSWORD in env file.")
 	return uri, user, pwd, db
 
 
@@ -129,7 +129,6 @@ def deep_clean_graph_doc(doc):
 
 def main():
 	ap = argparse.ArgumentParser()
-	ap.add_argument("--dotenv", default="neo4j_acc.txt")
 	ap.add_argument("--graph_dirs", nargs="+", required=True)
 	ap.add_argument("--csv", default=None)
 	ap.add_argument("--country_col", default="countryLabel")
@@ -139,7 +138,6 @@ def main():
 	ap.add_argument("--skip_metadata", action="store_true")
 	args = ap.parse_args()
 
-	load_env(args.dotenv)
 	uri, user, pwd, db = get_creds()
 	print(f"Using Neo4j URI: {uri}")
 	verify_connectivity(uri, user, pwd)

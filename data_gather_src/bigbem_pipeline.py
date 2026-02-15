@@ -7,12 +7,12 @@ from langchain_ollama import OllamaEmbeddings, ChatOllama
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 import hashlib
 from neo4j import GraphDatabase
-# 1. Setup
-dotenv.load_dotenv("neo4j_acc.txt")
-URI = os.getenv("NEO4J_LOCAL_URI")
-USER = os.getenv("NEO4J_LOCAL_USER")
-PWD = os.getenv("NEO4J_LOCAL_PASSWORD")
-DATABASE = os.getenv("NEO4J_LOCAL_DATABASE")
+
+
+URI = os.getenv("NEO4J_URI")
+USER = os.getenv("NEO4J_USER")
+PWD = os.getenv("NEO4J_PASSWORD")
+DATABASE = os.getenv("NEO4J_DATABASE")
 
 graph = Neo4jGraph(url=URI, username=USER, password=PWD, database=DATABASE)
 driver = GraphDatabase.driver(URI, auth=(USER, PWD))

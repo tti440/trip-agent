@@ -7,13 +7,11 @@ from pyspark.sql.functions import pandas_udf, col
 from pyspark.sql.types import ArrayType, FloatType, StructType, StructField, StringType, DoubleType, LongType, IntegerType
 import dotenv
 
-# 1. Load Environment Variables
-dotenv.load_dotenv("neo4j_acc.txt")
 
-URI = os.getenv("NEO4J_LOCAL_URI") or "bolt://localhost:7687"
-USER = os.getenv("NEO4J_LOCAL_USER") or "neo4j"
-PWD = os.getenv("NEO4J_LOCAL_PASSWORD") or "password"
-DATABASE = os.getenv("NEO4J_LOCAL_DATABASE") or "neo4j"
+URI = os.getenv("NEO4J_URI")
+USER = os.getenv("NEO4J_USER")
+PWD = os.getenv("NEO4J_PASSWORD")
+DATABASE = os.getenv("NEO4J_DATABASE")
 DRIVER_HOST = socket.gethostbyname(socket.gethostname())
 # spark: use Scala-matching connector (very often 2.12)
 spark = SparkSession.builder \
