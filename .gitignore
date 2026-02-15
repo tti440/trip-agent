@@ -33,5 +33,6 @@ environment.yml
 output-candidate.txt
 output_description.txt
 gitAPI.txt
+sample.ipynb
 !data/clip_image.index
 !data/clip_text.index

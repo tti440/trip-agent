@@ -1,4 +1,4 @@
-from ddgs import AsyncDDGS
+from duckduckgo_search import DDGS
 import asyncio
 from typing import List, TypedDict, Annotated
 
@@ -8,9 +8,9 @@ class RealTimeAgent:
 
     async def _search(self, query: str, max_results: int = 5) -> str:
         try:
-            async with AsyncDDGS(timeout=self.timeout) as ddgs:
+            async with DDGS(timeout=self.timeout) as ddgs:
                 results = []
-                async for r in ddgs.text(query, max_results=max_results):
+                async for r in ddgs.atext(query, max_results=max_results):
                     results.append(r)
                 
                 if not results:
