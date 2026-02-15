@@ -1,4 +1,4 @@
-FROM ghcr.io/tti440/trip-agent/trip-base:latest
+FROM ghcr.io/tti440/trip-agent/myproject/base:latest
 
 
 WORKDIR /app
