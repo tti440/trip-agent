@@ -1,33 +1,41 @@
-from ddgs import DDGS
+from ddgs import AsyncDDGS
+import asyncio
+from typing import List, TypedDict, Annotated
 
 class RealTimeAgent:
     def __init__(self):
-        self.ddgs = DDGS()
+        self.timeout = 10 
 
-    def _search(self, query, max_results=10):
-        """Helper to run the search and format results."""
+    async def _search(self, query: str, max_results: int = 5) -> str:
         try:
-            results = list(self.ddgs.text(query, max_results=max_results))
-            if not results:
-                return "No results found."
-            return "\n".join([f"- {r['title']}: {r['href']}\n  {r['body']}" for r in results])
+            async with AsyncDDGS(timeout=self.timeout) as ddgs:
+                results = []
+                async for r in ddgs.text(query, max_results=max_results):
+                    results.append(r)
+                
+                if not results:
+                    return f"No recent info found for: {query}"
+                
+                return "\n".join([f"- {r['title']}: {r['href']}\n  {r['body']}" for r in results])
+        
         except Exception as e:
-            return f"Search failed: {e}"
+            return f"Search timed out or was blocked for query: {query}"
 
-    def get_history(self, target):
-        return self._search(f"history and significance of {target}")
+   
+    async def get_history(self, target: str):
+        return await self._search(f"history and historical importance of {target}")
 
-    def get_logistics(self, target):
-        return self._search(f"public transport and how to get to {target} parking")
+    async def get_logistics(self, target: str):
+        return await self._search(f"how to travel to {target} public transport parking")
 
-    def get_culture(self, target):
-        return self._search(f"tourist etiquette, safety tips, and current trends {target}")
+    async def get_culture(self, target: str):
+        return await self._search(f"local etiquette, safety tips, and current trends {target}")
         
-    def get_accommodation(self, target):
-        return self._search(f"best hotels and hostels near {target}")
+    async def get_accommodation(self, target: str):
+        return await self._search(f"best hotels and hostels near {target}")
         
-    def get_food(self, target):
-        return self._search(f"best restaurants and street food near {target}")
+    async def get_food(self, target: str):
+        return await self._search(f"best local food and restaurants near {target}")
 
-# Initialize and export
+# Export the initialized agent
 rt_tools = RealTimeAgent()
