@@ -36,3 +36,4 @@ gitAPI.txt
 sample.ipynb
 !data/clip_image.index
 !data/clip_text.index
+scripts/minikube_start.sh

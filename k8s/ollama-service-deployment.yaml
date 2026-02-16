@@ -46,8 +46,8 @@ spec:
               value: "q4_0"
           resources:
             limits:
-              memory: "6Gi"
-              cpu: "2"
+              memory: "10Gi"
+              cpu: "4"
               nvidia.com/gpu: 1
             requests:
               memory: "4Gi"

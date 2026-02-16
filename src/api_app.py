@@ -153,7 +153,7 @@ def food_handler(state):
 def writer_handler(state):
 	print("✍️ WRITER: Synthesizing Final Itinerary...")
 	
-	llm = ChatOllama(model="llama3", temperature=0.7)
+	llm = ChatOllama(model="llama3", temperature=0.7, options={"num_ctx": 8192})
 	
 	prompt = ChatPromptTemplate.from_template("""
 	You are an expert Travel Planner.

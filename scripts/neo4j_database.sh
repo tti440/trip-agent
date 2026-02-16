@@ -21,7 +21,7 @@ kubectl exec "$POD" -- bash -c "neo4j stop || true"
 
 echo "🧹 Restoring DB..."
 kubectl exec "$POD" -- bash -c \
-  "rm -rf /data/* && tar -xzf /tmp/data.tar.gz -C /data"
+  "rm -rf /data/* && tar -xzf /tmp/data.tar.gz -C /data --strip-components=1"
 
 echo "▶ Starting Neo4j..."
 kubectl exec "$POD" -- bash -c "neo4j start"
