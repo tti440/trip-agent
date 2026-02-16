@@ -406,13 +406,13 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
     doc_snips = "\n\n".join(evidence_list)
     cand_list = "\n".join([f"- {lbl} ({qid}) Score={score:.4f}" for qid, lbl, score in candidates])
     with open("output-candidate.txt", "w") as f:
-        f.write(f"CANDIDATES:\n{cand_list}\n\nGRAPH CONTEXT:\n{candidate_graph}\n\nEVIDENCE:\n{doc_snips}")
-    return f"CANDIDATES:\n{cand_list}\n\nGRAPH CONTEXT:\n{candidate_graph}\n\nEVIDENCE:\n{doc_snips}"
+        f.write(f"TARGET LOCATIONS:\n{target_locations}\n\nCANDIDATES:\n{cand_list}\n\nGRAPH CONTEXT:\n{candidate_graph}\n\nEVIDENCE:\n{doc_snips}")
+    return f"TARGET LOCATIONS:\n{target_locations}\n\nCANDIDATES:\n{cand_list}\n\nGRAPH CONTEXT:\n{candidate_graph}\n\nEVIDENCE:\n{doc_snips}"
 
 # --- Main Chain ---
 
 template = """You are an expert travel investigator.
-Based on the provided "CANDIDATE LANDMARKS" (which are ranked by relevance score) and the "GRAPH CONTEXT", 
+Based on the provided "TARGET LOCATIONS","CANDIDATE LANDMARKS" (which are ranked by relevance score), "EVIDENCE" and "GRAPH CONTEXT", 
 identify the TOP 3 most likely candidates matching the user context.
 
 Context:
