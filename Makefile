@@ -38,6 +38,12 @@ spark-up:
 	kubectl apply -f k8s/spark-master-service.yaml,k8s/spark-master-deployment.yaml,k8s/spark-worker-1-deployment.yaml
 	kubectl scale deployment spark-worker-1 --replicas=5
 
+docker-clean:
+	docker container prune -f
+	docker image prune -f
+	docker volume prune -f
+	docker builder prune -f
+
 clean:
 	kubectl scale deployment spark-worker-1 --replicas=0
 	kubectl scale deployment spark-master --replicas=0

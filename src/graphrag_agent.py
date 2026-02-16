@@ -135,15 +135,14 @@ def top_landmark_candidates(docs_with_scores, target_locations, topn=10):
         UNWIND $qids AS candidate_qid
         MATCH (doc:Document {qid: candidate_qid})
         OPTIONAL MATCH (ent:Entity {id: doc.qidLabel})
-        WITH candidate_qid, [doc, ent] AS targets
-        UNWIND targets AS target
+        WITH candidate_qid, [doc, ent] AS candidates
+        UNWIND candidates AS target
         WITH candidate_qid, target WHERE target IS NOT NULL
         
         WITH candidate_qid, target, 
             COUNT { (target)<--() } AS in_degree,
             COUNT { (target)-->() } AS out_degree
         
-        // CALC 2: GEOGRAPHY (Path Check)
         OPTIONAL MATCH p = (target)-[*1..2]->(loc)
         WHERE (loc.id IN $targets OR loc.qidLabel IN $targets)
         AND any(rel IN relationships(p) WHERE coalesce(rel.rel_group,'') = 'LOCATED_IN')
