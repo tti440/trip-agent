@@ -127,17 +127,11 @@ def top_landmark_candidates(docs_with_scores, target_locations, topn=10):
     if target_locations:
         validation_query = """
         UNWIND $qids AS candidate_qid
-        CALL (candidate_qid) {
-            MATCH (doc:Document {qid: candidate_qid})
-            RETURN doc AS target, doc.qid AS output_qid
-            
-            UNION
-            
-            MATCH (doc:Document {qid: candidate_qid})
-            MATCH (entity)
-            WHERE entity.id = doc.qidLabel
-            RETURN entity AS target, doc.qid AS output_qid
-        }
+        MATCH (doc:Document {qid: candidate_qid})
+        OPTIONAL MATCH (ent:Entity {id: doc.qidLabel})
+        WITH candidate_qid, [doc, ent] AS targets
+        UNWIND targets AS target
+        WITH candidate_qid, target WHERE target IS NOT NULL
         
         WITH output_qid, target, 
             COUNT { (target)<--() } AS in_degree,
@@ -238,9 +232,13 @@ def fetch_landmark_graph_context(candidates, per=40):
     rows = graph.query(
         """
         UNWIND $qids AS qid
-        // landmark/entity node
-        MATCH (l)
-        WHERE l.qid = qid OR l.id = qid OR l.qidLabel = qid
+        MATCH (doc:Document {qid: qid})
+        OPTIONAL MATCH (ent {id: doc.qidLabel})
+        
+        WITH qid, [doc, ent] AS starts
+        UNWIND starts AS l
+        WITH qid, l WHERE l IS NOT NULL
+        
         OPTIONAL MATCH (l)-[r:REL]-(n)
         WHERE coalesce(r.rel_group,'') <> 'OTHER'
         WITH qid, l, collect(
@@ -365,25 +363,22 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
         # Get all QIDs from the 500 candidates
         filter_query = """
         UNWIND $qids AS qid
-        CALL (qid){
-            MATCH (doc:Document {qid: qid})
-            RETURN doc AS l, qid AS transient_qid
-            
-            UNION
-            
-            MATCH (doc:Document {qid: qid})
-            MATCH (l)
-            WHERE l.id = doc.qidLabel
-            RETURN l, qid AS transient_qid
-        }
-        
-        MATCH p = (l)-[*1..2]->(loc)
+        MATCH (doc:Document {qid: qid})
+        OPTIONAL MATCH (ent {id: doc.qidLabel})
+
+        WITH qid, [doc, ent] AS starts
+        UNWIND starts AS l
+        WITH qid, l WHERE l IS NOT NULL
+
+        MATCH (l)-[r1]->(mid)
+        OPTIONAL MATCH (mid)-[r2]->(end)
+        WITH qid, [r1, r2] AS rels,
+            CASE WHEN end IS NOT NULL THEN end ELSE mid END AS loc
+
         WHERE (loc.id IN $allowed OR loc.qidLabel IN $allowed)
-        
-        WITH transient_qid, p
-        WHERE any(rel IN relationships(p) WHERE coalesce(rel.rel_group,'') = 'LOCATED_IN')
-          
-        RETURN DISTINCT transient_qid as valid_qid
+        AND any(rel IN rels WHERE rel IS NOT NULL AND coalesce(rel.rel_group,'') = 'LOCATED_IN')
+
+        RETURN DISTINCT qid AS valid_qid
         """
         
         try:
