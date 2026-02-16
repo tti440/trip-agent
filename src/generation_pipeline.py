@@ -107,7 +107,7 @@ class VisionKnowledgeBackend:
 	def _get_text_keywords(self, description: str, text_input: list[str]) -> list:
 		if not text_input or len(text_input) == 0:
 			return []
-		llm = ChatOllama(model="llama3.1:8b", temperature=0, num_ctx=2048)
+		llm = ChatOllama(model="llama3", temperature=0, num_ctx=2048)
 		text_input = [kw.replace(".", "") for kw in text_input]
 		prompt = f"""
 				Identify the most meaningful keywords ONLY from the User Input that match the Visual Caption.
