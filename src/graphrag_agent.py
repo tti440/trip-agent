@@ -283,7 +283,7 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
         target_locations = [e for e in entities.names if e.lower() not in exclude_set] # e.g. ['London']
         print(f"📍 Extracted Locations: {target_locations}")
         for location in target_locations:
-            retrieval_query += f", {location}"
+            retrieval_query += f" {location}"
     except Exception as e:
         print(f"⚠️ NER Error: {e}")
         target_locations = []
