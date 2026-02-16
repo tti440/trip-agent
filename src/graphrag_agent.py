@@ -49,10 +49,10 @@ entity_model = ChatOllama(
     num_ctx=2048)
 
 llm = ChatOllama(
-    model="llama3.2:3b",
+    model="llama3",
     temperature=0,
     base_url=f"http://ollama-service:11434",
-    num_ctx=8192
+    num_ctx=7680
 )
 
 class Entities(BaseModel):
