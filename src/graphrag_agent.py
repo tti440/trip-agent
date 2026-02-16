@@ -109,7 +109,7 @@ def top_landmark_candidates(docs_with_scores, target_locations, topn=10):
         UNION
 
         MATCH (doc:Document {qid: candidate_qid})
-        MATCH (entity)
+        MATCH (entity:__Entity__)
         WHERE entity.id = doc.qidLabel
         RETURN entity AS target, doc.qid AS output_qid
         }
@@ -215,7 +215,7 @@ def fetch_landmark_graph_context(candidates, per=40):
         """
         UNWIND $qids AS qid
         MATCH (doc:Document {qid: qid})
-        OPTIONAL MATCH (ent:Entity {id: doc.qidLabel})
+        OPTIONAL MATCH (ent:__Entity__ {id: doc.qidLabel})
 
         WITH qid, [x IN [doc, ent] WHERE x IS NOT NULL] AS starts
         UNWIND starts AS l
@@ -350,7 +350,7 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
         filter_query = """
         UNWIND $qids AS qid
         MATCH (doc:Document {qid: qid})
-        OPTIONAL MATCH (ent:Entity {id: doc.qidLabel})
+        OPTIONAL MATCH (ent:__Entity__ {id: doc.qidLabel})
         WITH qid, [x IN [doc, ent] WHERE x IS NOT NULL] AS starts
         UNWIND starts AS l
         WITH DISTINCT qid, l
