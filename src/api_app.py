@@ -160,13 +160,14 @@ def writer_handler(state):
 	
 	LANDMARK: {landmark}
 	
-	1. VISUAL CONTEXT: {caption}
-	2. NEO4J FACTS: {graph_desc}
-	3. WEB HISTORY: {history}
-	4. TRANSPORT: {logistics}
-	5. CULTURE/TIPS: {culture}
-	6. HOTELS: {hotels}
-	7. FOOD: {food}
+	1. USER VISUAL CONTEXT: {caption}
+	2. USER TEXT INPUT: {text_input}
+	3. NEO4J FACTS: {graph_desc}
+	4. WEB HISTORY: {history}
+	5. TRANSPORT: {logistics}
+	6. CULTURE/TIPS: {culture}
+	7. HOTELS: {hotels}
+	8. FOOD: {food}
 	
 	TASK:
 	Write a travel guide for this location.
@@ -177,6 +178,7 @@ def writer_handler(state):
 	
 	response = chain.invoke({
 		"caption": state["caption"],
+		"text_input": state["text_input"],
 		"landmark": state["landmark_name"],
 		"graph_desc": state["landmark_description"],
 		"history": state["history_data"],
