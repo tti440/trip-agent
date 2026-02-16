@@ -28,7 +28,7 @@ def clean_text(output_descriptions: str, max_retries: int = 5) -> str:
         except:
             pass 
 
-    llm = ChatOllama(model="llama3.1:8b", temperature=0, num_ctx=2048) 
+    llm = ChatOllama(model="llama3", temperature=0, num_ctx=2048) 
     prompt = f"Fix this JSON so it parses correctly. Return ONLY valid JSON:\n{output_descriptions}"
     print("🛠️ JSON FIXER: Cleaning output with LLM...")
     for attempt in range(max_retries):
