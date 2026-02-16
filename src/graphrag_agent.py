@@ -42,6 +42,12 @@ vector_index = Neo4jVector.from_existing_index(
     
 )
 
+entity_model = ChatOllama(
+    model="llama3.1:8b",
+    temperature=0,
+    base_url=f"http://ollama-service:11434",
+    num_ctx=2048)
+
 llm = ChatOllama(
     model="llama3.2:3b",
     temperature=0,
@@ -64,7 +70,7 @@ prompt = ChatPromptTemplate.from_messages([
     ("human", "input: {question}"),
 ])
 
-entity_chain = prompt | llm.with_structured_output(Entities)
+entity_chain = prompt | entity_model.with_structured_output(Entities)
 
 def remove_lucene_chars(text: str) -> str:
     return re.sub(r'[+\-!(){}\[\]^"~*?:\\/]', ' ', text)
@@ -133,7 +139,7 @@ def top_landmark_candidates(docs_with_scores, target_locations, topn=10):
         UNWIND targets AS target
         WITH candidate_qid, target WHERE target IS NOT NULL
         
-        WITH output_qid, target, 
+        WITH candidate_qid, target, 
             COUNT { (target)<--() } AS in_degree,
             COUNT { (target)-->() } AS out_degree
         
@@ -143,7 +149,7 @@ def top_landmark_candidates(docs_with_scores, target_locations, topn=10):
         AND any(rel IN relationships(p) WHERE coalesce(rel.rel_group,'') = 'LOCATED_IN')
           
         RETURN 
-            output_qid AS qid, 
+            candidate_qid AS qid, 
             max(in_degree) AS in_degree,
             max(out_degree) AS out_degree,
             count(p) > 0 AS is_in_target
