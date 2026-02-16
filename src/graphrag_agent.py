@@ -87,7 +87,7 @@ def doc_qid(doc):
 
 def top_landmark_candidates(docs_with_scores, target_locations, topn=10):
     """
-    Ranks candidates by Similarity Score, applying a 1.5x BOOST 
+    Ranks candidates by Similarity Score, applying a 1.1x BOOST 
     if the candidate is geographically located in the target area.
     """
     best_scores = {}
@@ -299,7 +299,7 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
         # print(f"🌍 Expanding Region for targets: {target_locations}")
         
         expansion_query = """
-        MATCH (n)
+        MATCH (n:__Entity__)
         WHERE n.id IN $targets OR n.qidLabel IN $targets
         WITH n
 
