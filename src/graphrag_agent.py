@@ -81,37 +81,6 @@ def generate_full_text_query(input: str) -> str:
     # Use fuzzy matching (~2) for slight spelling variations
     return " AND ".join([f"{word}~2" for word in words])
 
-def structured_retriever(question: str, per_entity_limit: int = 2) -> str:
-    result_lines = []
-    # 1. Extract entities from the user's question (LLM Step)
-    entities = entity_chain.invoke({"question": question})
-
-    for ent in entities.names:
-        # 2. Convert entity name to a fuzzy full-text query
-        q = generate_full_text_query(ent)
-        if not q: continue
-
-        # 3. Graph Query
-        response = graph.query(
-            """
-            CALL db.index.fulltext.queryNodes('entity', $query, {limit: $limit})
-            YIELD node, score
-            MATCH (node)-[r:REL]-(nbr)
-            WHERE coalesce(r.rel_group,'') <> 'OTHER'
-            RETURN
-            'Match: ' + coalesce(node.id, node.qidLabel, 'Unknown') +
-            ' (' + head(labels(node)) + ')' +
-            ' -[' + coalesce(r.rel_group, r.rel_type_en, r.rel_type, 'REL') + ']-> ' +
-            coalesce(nbr.id, nbr.qidLabel, nbr.qid, left(nbr.text,120), 'Unknown') +
-            ' (' + head(labels(nbr)) + ')' AS output
-            LIMIT 25;
-            """,
-            {"query": q, "limit": per_entity_limit}
-        )
-        result_lines.extend([row["output"] for row in response])
-
-    return "\n".join(result_lines) if result_lines else "No structured connections found."
-
 def doc_qid(doc):
     md = getattr(doc, "metadata", {}) or {}
     return md.get("qid"), md.get("qidLabel")
@@ -251,7 +220,7 @@ def fetch_landmark_graph_context(candidates, per=40):
         WITH qid, [x IN [doc, ent] WHERE x IS NOT NULL] AS starts
         UNWIND starts AS l
 
-        CALL {
+        CALL (l){
         WITH l
         MATCH (l)-[r:REL]-(n)
         WHERE coalesce(r.rel_group,'') <> 'OTHER'
@@ -301,10 +270,9 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
     # --- 1. SEARCH STRATEGY: PURE VISUAL SIGNAL ---
     
     if caption and keywords:
-        # Strategy: Repeat the caption to boost its signal, add keywords for context.
-        # This creates a vector purely focused on the VISUAL object.
-        kw_str = ", ".join(keywords)
-        retrieval_query = f"{caption}, {kw_str}"
+        kw_str = " ".join(sorted(set(keywords)))
+        retrieval_query = f"{caption} {kw_str}"
+        retrieval_query = retrieval_query.replace(",", " ")
     else:
         retrieval_query = question
     
