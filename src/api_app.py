@@ -203,6 +203,7 @@ def map_candidates(state):
     raw_data = state.get("candidates_raw", {})
     caption = state.get("caption", "")
     image_path = state.get("image_path", "")
+    text_input = state.get("text_input", "")
     tasks = []
     
     for key, val in raw_data.items():
@@ -210,6 +211,7 @@ def map_candidates(state):
         candidate_input = {
             "image_path": image_path,
             "caption": caption,
+            "text_input": text_input,
             "landmark_name": val.get('name', 'Unknown'),
             "landmark_description": val.get('description', ''),
             "itineraries": [] # Initialize an empty list for this worker
