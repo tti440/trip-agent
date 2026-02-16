@@ -133,25 +133,33 @@ def top_landmark_candidates(docs_with_scores, target_locations, topn=10):
     if target_locations:
         validation_query = """
         UNWIND $qids AS candidate_qid
+        CALL (candidate_qid) {
         MATCH (doc:Document {qid: candidate_qid})
-        OPTIONAL MATCH (ent:Entity {id: doc.qidLabel})
-        WITH candidate_qid, [doc, ent] AS candidates
-        UNWIND candidates AS target
-        WITH candidate_qid, target WHERE target IS NOT NULL
-        
-        WITH candidate_qid, target, 
+        RETURN doc AS target, doc.qid AS output_qid
+
+        UNION
+
+        MATCH (doc:Document {qid: candidate_qid})
+        MATCH (entity)
+        WHERE entity.id = doc.qidLabel
+        RETURN entity AS target, doc.qid AS output_qid
+        }
+
+        WITH output_qid, target,
             COUNT { (target)<--() } AS in_degree,
-            COUNT { (target)-->() } AS out_degree
-        
-        OPTIONAL MATCH p = (target)-[*1..2]->(loc)
-        WHERE (loc.id IN $targets OR loc.qidLabel IN $targets)
-        AND any(rel IN relationships(p) WHERE coalesce(rel.rel_group,'') = 'LOCATED_IN')
-          
-        RETURN 
-            candidate_qid AS qid, 
+            COUNT { (target)-->() } AS out_degree,
+            EXISTS {
+            MATCH p = (target)-[*1..2]->(loc)
+            WHERE (loc.id IN $targets OR loc.qidLabel IN $targets)
+                AND any(r IN relationships(p) WHERE coalesce(r.rel_group,'') = 'LOCATED_IN')
+            } AS in_target
+
+        WITH output_qid,
             max(in_degree) AS in_degree,
             max(out_degree) AS out_degree,
-            count(p) > 0 AS is_in_target
+            max(in_target) AS is_in_target
+
+        RETURN output_qid AS qid, in_degree, out_degree, is_in_target
         """
         
         try:
@@ -238,22 +246,27 @@ def fetch_landmark_graph_context(candidates, per=40):
         """
         UNWIND $qids AS qid
         MATCH (doc:Document {qid: qid})
-        OPTIONAL MATCH (ent {id: doc.qidLabel})
-        
-        WITH qid, [doc, ent] AS starts
+        OPTIONAL MATCH (ent:Entity {id: doc.qidLabel})
+
+        WITH qid, [x IN [doc, ent] WHERE x IS NOT NULL] AS starts
         UNWIND starts AS l
-        WITH qid, l WHERE l IS NOT NULL
-        
-        OPTIONAL MATCH (l)-[r:REL]-(n)
+
+        CALL {
+        WITH l
+        MATCH (l)-[r:REL]-(n)
         WHERE coalesce(r.rel_group,'') <> 'OTHER'
-        WITH qid, l, collect(
-            coalesce(l.qidLabel,l.id,'?') + ' -[' +
-            coalesce(r.rel_group,r.rel_type_en,r.rel_type,'REL') + ']-> ' +
+        WITH l, r, n
+        LIMIT $per
+        RETURN collect(
+            coalesce(l.qidLabel,l.id,'?') + ' --[' +
+            coalesce(r.rel_group,r.rel_type_en,r.rel_type,'REL') + ']-- ' +
             coalesce(n.qidLabel,n.id,n.qid,left(n.text,80),'?')
-        )[0..$per] AS facts
+        ) AS facts
+        }
+
         RETURN qid AS qid,
-               coalesce(l.qidLabel,l.id) AS label,
-               facts AS facts
+            coalesce(l.qidLabel,l.id) AS label,
+            facts AS facts
         """,
         {"qids": qids, "per": per},
     )
@@ -369,19 +382,17 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
         filter_query = """
         UNWIND $qids AS qid
         MATCH (doc:Document {qid: qid})
-        OPTIONAL MATCH (ent {id: doc.qidLabel})
-
-        WITH qid, [doc, ent] AS starts
+        OPTIONAL MATCH (ent:Entity {id: doc.qidLabel})
+        WITH qid, [x IN [doc, ent] WHERE x IS NOT NULL] AS starts
         UNWIND starts AS l
-        WITH qid, l WHERE l IS NOT NULL
+        WITH DISTINCT qid, l
 
-        MATCH (l)-[r1]->(mid)
-        OPTIONAL MATCH (mid)-[r2]->(end)
-        WITH qid, [r1, r2] AS rels,
-            CASE WHEN end IS NOT NULL THEN end ELSE mid END AS loc
-
+        WHERE EXISTS {
+        MATCH p = (l)-[*1..2]->(loc)
         WHERE (loc.id IN $allowed OR loc.qidLabel IN $allowed)
-        AND any(rel IN rels WHERE rel IS NOT NULL AND coalesce(rel.rel_group,'') = 'LOCATED_IN')
+            AND any(rel IN relationships(p)
+                    WHERE coalesce(rel.rel_group,'') = 'LOCATED_IN')
+        }
 
         RETURN DISTINCT qid AS valid_qid
         """
