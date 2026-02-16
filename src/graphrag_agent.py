@@ -480,7 +480,7 @@ def build_multimodal_question(caption: str, keywords: set[str], user_input: str)
     Analyze the Visual Description and Context and USER INPUT. 
     Rank the Top 3 best matching landmarks from the candidates provided.
     For each, explain why it fits the description ("{caption}") in JSON format.
-    Respond ONLY in the following JSON format:
+    Respond EXACTLY in the following JSON format:
     {{
         "1":
             {{
