@@ -43,9 +43,10 @@ vector_index = Neo4jVector.from_existing_index(
 )
 
 llm = ChatOllama(
-    model="llama3",
+    model="llama3.2:3b",
     temperature=0,
     base_url=f"http://ollama-service:11434",
+    num_ctx=8192
 )
 
 class Entities(BaseModel):

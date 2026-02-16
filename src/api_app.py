@@ -28,7 +28,7 @@ def clean_text(output_descriptions: str) -> str:
         except:
             pass 
 
-    llm = ChatOllama(model="llama3", temperature=0, num_ctx=2048) 
+    llm = ChatOllama(model="llama3.1:8b", temperature=0, num_ctx=2048) 
     prompt = f"Fix this JSON so it parses correctly. Return ONLY valid JSON:\n{output_descriptions}"
     print("🛠️ JSON FIXER: Cleaning output with LLM...")
     response = llm.invoke(prompt)
@@ -153,7 +153,7 @@ def food_handler(state):
 def writer_handler(state):
 	print("✍️ WRITER: Synthesizing Final Itinerary...")
 	
-	llm = ChatOllama(model="llama3", temperature=0.7, options={"num_ctx": 8192})
+	llm = ChatOllama(model="llama3.2:3b", temperature=0.7, num_ctx=8192)
 	
 	prompt = ChatPromptTemplate.from_template("""
 	You are an expert Travel Planner.
