@@ -45,7 +45,6 @@ jobs:
               - 'src/generation_pipeline.py'
               - 'src/graphrag_agent.py'
               - 'src/api_backend.py'
-              - 'src/api_app.py'
               - 'docker/backend.Dockerfile'
             frontend:
               - 'src/app.py'
