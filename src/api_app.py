@@ -103,9 +103,12 @@ def core_handler(state):
         print(f"DEBUG: Backend response: {response}")
         graph_desc = response["candidates_raw"]
         caption = response["caption"]
-        #graph_desc=graph_desc[graph_desc.find("{"):graph_desc.rfind("}")].strip()
-        graph_desc= clean_text(graph_desc)
-        data = json.loads(graph_desc)
+        if isinstance(graph_desc, dict):
+            data = graph_desc
+        else:
+            graph_desc = clean_text(graph_desc)
+            data = json.loads(graph_desc)
+
         print("Graph description JSON parsed successfully.")
         with open("graph_description.json", "w") as f:
             json.dump(data, f, indent=2)
