@@ -5,7 +5,7 @@ WORKDIR /app
 RUN pip install --no-cache-dir --ignore-installed streamlit
 
 # COPY .env neo4j_acc.txt /app/
-COPY src/app.py /app/
+COPY src/app.py src/service_url.py /app/
 RUN mkdir -p /app/user_img
 
 EXPOSE 8501
