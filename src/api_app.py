@@ -18,15 +18,11 @@ from service_url import BACKEND_URL, NEO4J_URL, OLLAMA_URL
 app_api = FastAPI(title="Landmark Description and Gather Data Service")
 
 def clean_text(output_descriptions: str, max_retries: int = 5) -> str:
-    match = re.search(r'\{.*\}', output_descriptions, re.DOTALL)
-
-    if match:
-        potential_json = match.group(0)
-        try:
-            json.loads(potential_json)
-            return potential_json
-        except:
-            pass 
+    try:
+        json.loads(output_descriptions)
+        return output_descriptions
+    except:
+        pass 
 
     llm = ChatOllama(model="llama3", temperature=0, num_ctx=2048, base_url=OLLAMA_URL) 
     prompt = f"Fix this JSON so it parses correctly. Return ONLY valid JSON:\n{output_descriptions}"
@@ -288,7 +284,7 @@ async def generate_plan(file: UploadFile = File(...), text_input: str = Form("")
         inputs = {"image_path": temp_path, "text_input": text_input, "itineraries": []}
         
         print("🚀 Starting Multi-Candidate Analysis...")
-        result = await app.invoke(inputs)
+        result = await app.ainvoke(inputs)
         
         print("\n" + "="*50)
         print(f"✅ Generated {len(result['itineraries'])} Plans:\n")
