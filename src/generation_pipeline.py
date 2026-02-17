@@ -8,7 +8,7 @@ import faiss
 from graphrag_agent import graphrag_run
 import os
 from langchain_ollama import ChatOllama
-from service_url import BACKEND_URL, ORCHESTRATOR_URL, OLLAMA_URL
+from service_url import BACKEND_URL, OLLAMA_URL
 
 
 filedir = os.path.dirname(os.path.abspath(__file__))

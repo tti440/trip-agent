@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 import os
 import base64
-from service_url import BACKEND_URL, ORCHESTRATOR_URL
 
 st.set_page_config(page_title="AI Travel Planner", layout="wide")
 st.title("🌍 AI Multimodal Travel Agent")

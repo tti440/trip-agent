@@ -11,7 +11,7 @@ import re
 import math
 import subprocess
 from pydantic import BaseModel, Field, ConfigDict
-from service_url import BACKEND_URL, ORCHESTRATOR_URL, OLLAMA_URL
+from service_url import BACKEND_URL, OLLAMA_URL
 
 class Candidate(BaseModel):
     name: str
