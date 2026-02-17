@@ -10,7 +10,19 @@ import dotenv
 import re
 import math
 import subprocess
+# from pydantic import BaseModel, Field
 
+
+# class Candidate(BaseModel):
+#     name: str
+#     description: str
+#     reasoning: str
+
+# class Top3Candidates(BaseModel):
+#     top1: Candidate
+#     top2: Candidate
+#     top3: Candidate
+    
 cmd = "ip route show | grep default | awk '{print $3}'"
 WINDOWS_HOST_IP = subprocess.getoutput(cmd)
 
@@ -458,6 +470,7 @@ def build_multimodal_question(caption: str, keywords: set[str], user_input: str)
     Analyze the Visual Description and Context and USER INPUT. 
     Rank the Top 3 best matching landmarks from the candidates provided.
     For each, explain why it fits the description ("{caption}") in JSON format.
+    Do not add any explanations or extra texts.
     Respond EXACTLY in the following JSON format:
     {{
         "1":
