@@ -37,3 +37,6 @@ sample.ipynb
 !data/clip_image.index
 !data/clip_text.index
 scripts/minikube_start.sh
+docker-compose.yml
+neo4j_data/
+user_img1.jpg

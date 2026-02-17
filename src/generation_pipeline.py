@@ -8,6 +8,7 @@ import faiss
 from graphrag_agent import graphrag_run
 import os
 from langchain_ollama import ChatOllama
+from service_url import BACKEND_URL, ORCHESTRATOR_URL, OLLAMA_URL
 
 
 filedir = os.path.dirname(os.path.abspath(__file__))
@@ -27,10 +28,16 @@ class VisionKnowledgeBackend:
 		self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14", use_fast=True)
 		self.blip_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base", use_fast=True)
 		self.blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(self.device)
-		self.image_index = faiss.read_index("clip_image.index")
-		self.text_index = faiss.read_index("clip_text.index")
-		self.keywords_df = pd.read_csv("keywords.csv")
-		self.ids_list = pd.read_csv("photo_ids.csv", header=None)
+		try:
+			self.image_index = faiss.read_index("clip_image.index")
+			self.text_index = faiss.read_index("clip_text.index")
+			self.keywords_df = pd.read_csv("keywords.csv")
+			self.ids_list = pd.read_csv("photo_ids.csv", header=None)
+		except Exception as e:
+			self.image_index = faiss.read_index(os.path.join(filedir, "../data", "clip_image.index"))
+			self.text_index = faiss.read_index(os.path.join(filedir, "../data", "clip_text.index"))
+			self.keywords_df = pd.read_csv(os.path.join(filedir, "../data", "keywords.csv"))
+			self.ids_list = pd.read_csv(os.path.join(filedir, "../data", "photo_ids.csv"), header=None)
 		# print("✅ Models and indexes loaded.")
 
 	def image_to_text(self, image_path):
@@ -108,7 +115,7 @@ class VisionKnowledgeBackend:
 	def _get_text_keywords(self, description: str, text_input: list[str]) -> list:
 		if not text_input or len(text_input) == 0:
 			return []
-		llm = ChatOllama(model="llama3", temperature=0, num_ctx=2048)
+		llm = ChatOllama(model="llama3", temperature=0, num_ctx=2048, base_url=OLLAMA_URL)
 		text_input = [kw.replace(".", "") for kw in text_input]
 		prompt = f"""
 				Identify the most meaningful keywords ONLY from the User Input that match the Visual Caption.
@@ -145,7 +152,6 @@ class VisionKnowledgeBackend:
 		import gc; gc.collect(); torch.cuda.empty_cache()
 		# remove word people or person from keywords and captions
 		keywords = [kw for kw in keywords if kw.lower() not in ["people", "person"]]
-		# caption is strong
 		print(f"🔍 Extracted Keywords: {keywords}")
 		caption = caption.replace("people", "").replace("person", "").strip()
 		result = graphrag_run(caption, keywords, text_input)
@@ -159,8 +165,11 @@ if __name__ == "__main__":
 	parser.add_argument("--img_path", type=str, required=True, help="Path to the input image")
 	parser.add_argument("--text_input", type=str, default="", help="User text input for additional context")
 	args = parser.parse_args()
+	import time
+	start_time = time.time()
 	description, caption = backend.run_generation_pipeline(args.img_path, args.text_input)
-	with open("output_description.txt", "w") as f:
-		f.write(description)
-	# print("Caption:", caption)
-	# print("Description:", description)
+	# with open("output_description.txt", "w") as f:
+	# 	f.write(description)
+	print("Caption:", caption)
+	print("Description:", description)
+	print(f"Pipeline execution time: {time.time() - start_time:.2f} seconds")

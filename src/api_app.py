@@ -13,8 +13,8 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 import shutil
 import uvicorn
 import re
+from service_url import BACKEND_URL, NEO4J_URL, OLLAMA_URL
 
-BACKEND_HOST = os.getenv("BACKEND_SERVICE_HOST", "backend") 
 app_api = FastAPI(title="Landmark Description and Gather Data Service")
 
 def clean_text(output_descriptions: str, max_retries: int = 5) -> str:
@@ -28,7 +28,7 @@ def clean_text(output_descriptions: str, max_retries: int = 5) -> str:
         except:
             pass 
 
-    llm = ChatOllama(model="llama3", temperature=0, num_ctx=2048) 
+    llm = ChatOllama(model="llama3", temperature=0, num_ctx=2048, base_url=OLLAMA_URL) 
     prompt = f"Fix this JSON so it parses correctly. Return ONLY valid JSON:\n{output_descriptions}"
     print("🛠️ JSON FIXER: Cleaning output with LLM...")
     for attempt in range(max_retries):
@@ -99,7 +99,7 @@ def core_handler(state):
     print("🧠 CORE AGENT: Identifying Landmark...")
     image_path = state["image_path"]
     text_input = state.get("text_input", "")
-    backend_url = f"http://{BACKEND_HOST}:8000/identify?image_path={image_path}&text_input={text_input}"
+    backend_url = f"{BACKEND_URL}/identify?image_path={image_path}&text_input={text_input}"
     try:
         response_obj = requests.get(backend_url)
         response_obj.raise_for_status()
@@ -108,7 +108,7 @@ def core_handler(state):
         graph_desc = response["candidates_raw"]
         caption = response["caption"]
         #graph_desc=graph_desc[graph_desc.find("{"):graph_desc.rfind("}")].strip()
-        graph_desc= clean_text(graph_desc.strip())
+        graph_desc= clean_text(graph_desc)
         data = json.loads(graph_desc)
         print("Graph description JSON parsed successfully.")
         with open("graph_description.json", "w") as f:
@@ -163,7 +163,7 @@ async def food_handler(state):
 def writer_handler(state):
     print("✍️ WRITER: Synthesizing Final Itinerary...")
     
-    llm = ChatOllama(model="llama3.2:3b", temperature=0.7, num_ctx=8192)
+    llm = ChatOllama(model="llama3.2:3b", temperature=0.5, num_ctx=8192)
     
     prompt = ChatPromptTemplate.from_template("""
     You are an expert Travel Planner.
@@ -288,7 +288,7 @@ async def generate_plan(file: UploadFile = File(...), text_input: str = Form("")
         inputs = {"image_path": temp_path, "text_input": text_input, "itineraries": []}
         
         print("🚀 Starting Multi-Candidate Analysis...")
-        result = app.invoke(inputs)
+        result = await app.invoke(inputs)
         
         print("\n" + "="*50)
         print(f"✅ Generated {len(result['itineraries'])} Plans:\n")

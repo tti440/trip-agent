@@ -11,6 +11,7 @@ import re
 import math
 import subprocess
 from pydantic import BaseModel, Field, ConfigDict
+from service_url import BACKEND_URL, ORCHESTRATOR_URL, OLLAMA_URL
 
 class Candidate(BaseModel):
     name: str
@@ -28,6 +29,8 @@ class Top3Candidates(BaseModel):
 cmd = "ip route show | grep default | awk '{print $3}'"
 WINDOWS_HOST_IP = subprocess.getoutput(cmd)
 
+if os.path.exists(".env"):
+    dotenv.load_dotenv()
 URI = os.getenv("NEO4J_URI")
 USER = os.getenv("NEO4J_USER")
 PWD = os.getenv("NEO4J_PASSWORD")
@@ -39,7 +42,7 @@ graph.query("CREATE FULLTEXT INDEX entity IF NOT EXISTS FOR (e:__Entity__) ON EA
 
 emb = OllamaEmbeddings(
     model="nomic-embed-text",
-    base_url=f"http://ollama-service:11434",
+    base_url=OLLAMA_URL,
     num_ctx=2048,
 )
 
@@ -59,14 +62,14 @@ vector_index = Neo4jVector.from_existing_index(
 entity_model = ChatOllama(
     model="llama3.1:8b",
     temperature=0,
-    base_url=f"http://ollama-service:11434",
+    base_url=OLLAMA_URL,
     num_ctx=2048)
 
 llm = ChatOllama(
     model="llama3",
     temperature=0,
-    base_url=f"http://ollama-service:11434",
-    num_ctx=7680
+    base_url=OLLAMA_URL,
+    num_ctx=8192
 )
 
 class Entities(BaseModel):
@@ -97,7 +100,8 @@ def generate_full_text_query(input: str) -> str:
 
 def doc_qid(doc):
     md = getattr(doc, "metadata", {}) or {}
-    return md.get("qid"), md.get("qidLabel")
+    text = getattr(doc, "page_content", "") or ""
+    return md.get("qid"), md.get("qidLabel"), text
 
 def top_landmark_candidates(docs_with_scores, target_locations, topn=10):
     """
@@ -124,7 +128,7 @@ def top_landmark_candidates(docs_with_scores, target_locations, topn=10):
 
         MATCH (doc:Document {qid: candidate_qid})
         MATCH (entity:__Entity__)
-        WHERE entity.id = doc.qidLabel
+        WHERE entity.qid = doc.qid
         RETURN entity AS target, doc.qid AS output_qid
         }
 
@@ -132,9 +136,9 @@ def top_landmark_candidates(docs_with_scores, target_locations, topn=10):
             COUNT { (target)<--() } AS in_degree,
             COUNT { (target)-->() } AS out_degree,
             EXISTS {
-            MATCH p = (target)-[*1..2]->(loc)
+            MATCH p = (target)-[*1..3]->(loc)
             WHERE (loc.id IN $targets OR loc.qidLabel IN $targets)
-                AND any(r IN relationships(p) WHERE coalesce(r.rel_group,'') = 'LOCATED_IN')
+                AND all(r IN relationships(p) WHERE coalesce(r.rel_group,'') = 'LOCATED_IN')
             } AS in_target
 
         WITH output_qid,
@@ -161,15 +165,20 @@ def top_landmark_candidates(docs_with_scores, target_locations, topn=10):
         except Exception as e:
             print(f"⚠️ Boosting Query Failed: {e}")
 
-    # 2. SCORING LOOP (Pure Python - Fast)
+    # Geographical Match and Boost based on graph match and text match
     for doc, score in docs_with_scores:
-        qid, qlbl = doc_qid(doc)
+        qid, qlbl, text = doc_qid(doc)
         if not qid: continue
         final_score = score
-        # APPLY BOOST
+        for target in target_locations:
+            if target.lower() in text.lower():
+                print(f"🚀 Boosting {qlbl} ({qid}) for text match with target location '{target}'.")
+                final_score *= 1.2
+                break
         if qid in boost_qids:
             print(f"🚀 Boosting {qlbl} ({qid}) for geographic relevance {target_locations}.")
             final_score *= 1.1
+        
         importance = node_importance.get(qid, 0)
         final_score += (importance * 0.05)
 
@@ -229,11 +238,11 @@ def fetch_landmark_graph_context(candidates, per=40):
         """
         UNWIND $qids AS qid
         MATCH (doc:Document {qid: qid})
-        OPTIONAL MATCH (ent:__Entity__ {id: doc.qidLabel})
+        OPTIONAL MATCH (ent:__Entity__ {qid: qid})
 
-        WITH qid, [x IN [doc, ent] WHERE x IS NOT NULL] AS starts
-        UNWIND starts AS l
-
+        WITH qid, coalesce(ent, doc) AS l
+        WITH DISTINCT qid, l
+        
         CALL (l){
         WITH l
         MATCH (l)-[r:REL]-(n)
@@ -327,7 +336,7 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
         WHERE r2.rel_group = "LOCATED_IN" 
         AND c <> n 
         
-        RETURN 
+        RETURN DISTINCT
             n.id AS n_id, n.qidLabel AS n_lbl,
             d.id AS d_id, d.qidLabel AS d_lbl,
             c.id AS c_id, c.qidLabel AS c_lbl
@@ -364,9 +373,8 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
         filter_query = """
         UNWIND $qids AS qid
         MATCH (doc:Document {qid: qid})
-        OPTIONAL MATCH (ent:__Entity__ {id: doc.qidLabel})
-        WITH qid, [x IN [doc, ent] WHERE x IS NOT NULL] AS starts
-        UNWIND starts AS l
+        OPTIONAL MATCH (ent:__Entity__ {qid: qid})
+        WITH qid, coalesce(ent, doc) AS l
         WITH DISTINCT qid, l
 
         WHERE EXISTS {
@@ -385,11 +393,11 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
                 "allowed": list(allowed_location_ids)
             })
             valid_qids = set(row["valid_qid"] for row in valid_rows)
-            # print(f"🛡️ Filter kept {len(valid_qids)} / {len(vec_docs)} candidates.")
+            print(f"🛡️ Filter kept {len(valid_qids)} / {len(vec_docs)} candidates.")
             
             final_docs = [d for d in vec_docs if d[0].metadata.get("qid") in valid_qids]
         except Exception as e:
-            # print(f"❌ Filter Failed: {e}")
+            print(f"❌ Filter Failed: {e}")
             final_docs = vec_docs[:50]
             
     else:
@@ -399,8 +407,10 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
     if not final_docs:
         # print("⚠️ Filter too strict. Showing top 10 raw results.")
         final_docs = vec_docs[:50]
-            
-    candidates = top_landmark_candidates(final_docs, target_locations,topn=25)
+    
+    # print(f"📊 Final Candidate Count: {len(final_docs)}")
+    # print(final_docs)
+    candidates = top_landmark_candidates(final_docs, target_locations,topn=15)
     candidate_graph = fetch_landmark_graph_context(candidates, per=20)
     qid_to_doc = {}
     for d, score in final_docs:
@@ -411,10 +421,13 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
                 qid_to_doc[qid] = d.page_content
 
     evidence_list = []
-    for qid, label, score in candidates[:25]:
+    for qid, label, score in candidates[:15]:
         text = qid_to_doc.get(qid, "No text available.")
         # Clean up newlines for cleaner prompt
         clean_text = text[:700].replace("\n", " ")
+        # for target in target_locations:
+        #     if target.lower() in clean_text.lower():
+        #         score *= 1.2
         evidence_list.append(f"== {label} (Score={score:.4f}) ==\n{clean_text}...")
 
     doc_snips = "\n\n".join(evidence_list)
@@ -426,8 +439,9 @@ def retriever(question: str, caption: str = None, keywords: set[str] = None) -> 
 # --- Main Chain ---
 
 template = """You are an expert travel investigator.
-Based on the provided "TARGET LOCATIONS","CANDIDATE LANDMARKS" (which are ranked by relevance score), "EVIDENCE" and "GRAPH CONTEXT", 
-identify the TOP 3 most likely candidates matching the user context.
+Based on the provided "TARGET LOCATIONS","CANDIDATES" (which are ranked by relevance score), "EVIDENCE" and "GRAPH CONTEXT", 
+identify the TOP 3 most likely candidates matching the user input and visual description. 
+User's geographical preferences should be considered when making the selection if existing.
 
 Context:
 {context}
@@ -471,44 +485,14 @@ def build_multimodal_question(caption: str, keywords: set[str], user_input: str)
     PRIMARY VISUAL DESCRIPTION:
     {caption}
     
-    AUXILIARY CONTEXT (Keywords from similar images):
-    {', '.join(kw_list)}
-    
     USER INPUT:
     {user_input}
     
-    USER REQUEST:
+    Tasks:
     Analyze the Visual Description and Context and USER INPUT. 
-    Rank the Top 3 best matching landmarks from the candidates provided.
-    For each, explain why it fits the description ("{caption}") in JSON format.
-    Do not add any explanations or extra texts.
-    Respond EXACTLY in the following JSON format:
-    {{
-        "1":
-            {{
-            "name": "Landmark Name",
-            "description": "Description of the landmark",
-            "reasoning": "Explanation of why this landmark matches the visual description."}},
-        "2": {{
-            "name": "Landmark Name",
-            "description": "Description of the landmark",
-            "reasoning": "Explanation of why this landmark matches the visual description."}},
-        "3": {{
-            "name": "Landmark Name",
-            "description": "Description of the landmark",
-            "reasoning": "Explanation of why this landmark matches the visual description."}}
-        }}
+    Find the Top 3 best matching landmarks from the candidates provided.
+    For each, explain why it fits the description ("{caption}").
     """
-    #     "4": {{
-    #         "name": "Landmark Name",
-    #         "description": "Description of the landmark",
-    #         "reasoning": "Explanation of why this landmark matches the visual description."}},
-    #     "5": {{
-    #         "name": "Landmark Name",
-    #         "description": "Description of the landmark",
-    #         "reasoning": "Explanation of why this landmark matches the visual description."}}
-    # }}
-    # """
        
 # def graphrag_run(caption: str, keywords: list[str], user_input: str) -> str:
 #     question = build_multimodal_question(caption, keywords, user_input)
