@@ -9,6 +9,7 @@ from graphrag_agent import graphrag_run
 import os
 from langchain_ollama import ChatOllama
 
+
 filedir = os.path.dirname(os.path.abspath(__file__))
 
 class VisionKnowledgeBackend:

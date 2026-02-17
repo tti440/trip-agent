@@ -10,18 +10,20 @@ import dotenv
 import re
 import math
 import subprocess
-# from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
+class Candidate(BaseModel):
+    name: str
+    description: str
+    reasoning: str
 
-# class Candidate(BaseModel):
-#     name: str
-#     description: str
-#     reasoning: str
+class Top3Candidates(BaseModel):
+    # allow model_dump(by_alias=True) to output "1","2","3"
+    model_config = ConfigDict(populate_by_name=True)
 
-# class Top3Candidates(BaseModel):
-#     top1: Candidate
-#     top2: Candidate
-#     top3: Candidate
+    one: Candidate = Field(alias="1")
+    two: Candidate = Field(alias="2")
+    three: Candidate = Field(alias="3")
     
 cmd = "ip route show | grep default | awk '{print $3}'"
 WINDOWS_HOST_IP = subprocess.getoutput(cmd)
@@ -240,7 +242,7 @@ def fetch_landmark_graph_context(candidates, per=40):
         LIMIT $per
         RETURN collect(
             coalesce(l.qidLabel,l.id,'?') + ' --[' +
-            coalesce(r.rel_group,r.rel_type_en,r.rel_type,'REL') + ']-- ' +
+            coalesce(r.rel_type_en,r.rel_group,r.rel_type,'REL') + ']-- ' +
             coalesce(n.qidLabel,n.id,n.qid,left(n.text,80),'?')
         ) AS facts
         }
@@ -443,14 +445,23 @@ def context_from_inputs(inputs: dict) -> str:
         keywords=inputs.get("keywords")
     )
 
+# chain = (
+#     RunnableParallel({
+#         "context": context_from_inputs,
+#         "question": lambda inputs: inputs["question"],
+#     })
+#     | ChatPromptTemplate.from_template(template)
+#     | llm
+#     | StrOutputParser()
+# )
+
 chain = (
     RunnableParallel({
         "context": context_from_inputs,
         "question": lambda inputs: inputs["question"],
     })
     | ChatPromptTemplate.from_template(template)
-    | llm
-    | StrOutputParser()
+    | llm.with_structured_output(Top3Candidates)
 )
 
 def build_multimodal_question(caption: str, keywords: set[str], user_input: str) -> str:
@@ -498,11 +509,16 @@ def build_multimodal_question(caption: str, keywords: set[str], user_input: str)
     #         "reasoning": "Explanation of why this landmark matches the visual description."}}
     # }}
     # """
+       
+# def graphrag_run(caption: str, keywords: list[str], user_input: str) -> str:
+#     question = build_multimodal_question(caption, keywords, user_input)
+#     answer = chain.invoke({"question": question, "caption": caption, "keywords": keywords})
+#     return answer
 
 def graphrag_run(caption: str, keywords: list[str], user_input: str) -> str:
     question = build_multimodal_question(caption, keywords, user_input)
     answer = chain.invoke({"question": question, "caption": caption, "keywords": keywords})
-    return answer
+    return answer.model_dump(by_alias=True)
 
 # def main():
 #     caption = "A clock tower in a city at night"

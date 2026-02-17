@@ -74,6 +74,7 @@ class CandidateState(TypedDict):
     image_path: str
     caption: str
     text_input: str
+    landmark_reasoning: str
     landmark_name: str
     landmark_description: str
     history_data: str
@@ -93,7 +94,7 @@ class TripState(TypedDict, total=False):
     itineraries: Annotated[List[str], operator.add]
     candidates_raw: dict
     text_input: Annotated[str, skip_update]
-    
+       
 def core_handler(state):
     print("🧠 CORE AGENT: Identifying Landmark...")
     image_path = state["image_path"]
@@ -124,40 +125,40 @@ def core_handler(state):
         "image_path": image_path
     }
 
-def history_handler(state):
+async def history_handler(state):
     name = state["landmark_name"]
     desc = state["landmark_description"]
     target = f"{name} {desc}"
     print(f"📜 HISTORY: Web search for {target}...")
-    return {"history_data": rt_tools.get_history(target)}
+    return {"history_data": await rt_tools.get_history(target)}
 
-def logistics_handler(state):
+async def logistics_handler(state):
     name = state["landmark_name"]
     desc = state["landmark_description"]
     target = f"{name} {desc}"
     print(f"🚌 LOGISTICS: Transport search for {target}...")
-    return {"logistics_data": rt_tools.get_logistics(target)}
+    return {"logistics_data": await rt_tools.get_logistics(target)}
 
-def culture_handler(state):
+async def culture_handler(state):
     name = state["landmark_name"]
     desc = state["landmark_description"]
     target = f"{name} {desc}"
     print(f"🎎 CULTURE: Etiquette search for {target}...")
-    return {"cultural_data": rt_tools.get_culture(target)}
+    return {"cultural_data": await rt_tools.get_culture(target)}
 
-def accommodation_handler(state):
+async def accommodation_handler(state):
     name = state["landmark_name"]
     desc = state["landmark_description"]
     target = f"{name} {desc}"
     print(f"🏨 ACCOMMODATION: Hotel search for {target}...")
-    return {"accommodation_data": rt_tools.get_accommodation(target)}
+    return {"accommodation_data": await rt_tools.get_accommodation(target)}
 
-def food_handler(state):
+async def food_handler(state):
     name = state["landmark_name"]
     desc = state["landmark_description"]
     target = f"{name} {desc}"
     print(f"🍜 FOOD: Restaurant search for {target}...")
-    return {"food_data": rt_tools.get_food(target)}
+    return {"food_data": await rt_tools.get_food(target)}
 
 def writer_handler(state):
     print("✍️ WRITER: Synthesizing Final Itinerary...")
@@ -166,18 +167,27 @@ def writer_handler(state):
     
     prompt = ChatPromptTemplate.from_template("""
     You are an expert Travel Planner.
-    
-    LANDMARK: {landmark}
-    
-    1. USER VISUAL CONTEXT: {caption}
-    2. USER TEXT INPUT: {text_input}
-    3. NEO4J FACTS: {graph_desc}
-    4. WEB HISTORY: {history}
-    5. TRANSPORT: {logistics}
-    6. CULTURE/TIPS: {culture}
-    7. HOTELS: {hotels}
-    8. FOOD: {food}
-    
+
+    FACTS (must not be changed):
+    - Landmark name: {landmark}
+    - Landmark description (includes location): {graph_desc}
+    - Why it was selected: {reasoning}
+    - User text: {text_input}
+    - Visual caption: {caption}
+
+    Hard rules:
+    1) Do NOT change the landmark’s city/country. If the landmark is outside the user's preferred location, say so clearly and frame it as a day trip / alternative.
+    2) Do NOT invent addresses, opening hours, ticket prices, or "sunset views from the top" unless provided in the inputs.
+    3) If any tool output is missing or looks like a placeholder, omit it.
+
+    Inputs:
+    - WEB HISTORY: {history}
+    - TRANSPORT: {logistics}
+    - CULTURE/TIPS: {culture}
+    - HOTELS: {hotels}
+    - FOOD: {food}
+
+
     TASK:
     Write a travel guide for this location.
     Organize it into clear sections with emojis.
@@ -188,6 +198,7 @@ def writer_handler(state):
     response = chain.invoke({
         "caption": state["caption"],
         "text_input": state["text_input"],
+        "reasoning": state["landmark_reasoning"],
         "landmark": state["landmark_name"],
         "graph_desc": state["landmark_description"],
         "history": state["history_data"],
@@ -214,6 +225,7 @@ def map_candidates(state):
             "text_input": text_input,
             "landmark_name": val.get('name', 'Unknown'),
             "landmark_description": val.get('description', ''),
+            "landmark_reasoning": val.get('reasoning', ''),
             "itineraries": [] # Initialize an empty list for this worker
         }
         # Send starts the parallel subgraph instances
